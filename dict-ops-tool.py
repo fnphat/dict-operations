@@ -30,23 +30,34 @@ import argparse as _argparse
 
 
 VERSION = '0.1'
-URL = 'https://github.com/fnphat/dict-operations'
+URL = 'https://github.com/fnphat/dict-ops-tool'
 
 
 def json_str_2_data_dict(json_str):
+    """
+    Convert a JSON string to a dictionary.
+    """
     # This should be a JSON dictionary, removing the comment lines
     return _json.loads('\n'.join([x for x in json_str.splitlines() if not x.startswith('#')]))
 
 def data_dict_2_json(data_dict):
+    """
+    Convert a dictionary to a JSON string.
+    """
     return _json.dumps( _collections.OrderedDict(sorted(data_dict.items(), key=lambda t: t[0].lower())), indent=4 )
 
 def get_dicts(in_file):
+    """
+    Returns a tuple of dictionary A and B, from the standard input for A and the input file for B.
+    """
     dict_a = json_str_2_data_dict(_sys.stdin.read())
     with open(in_file) as f:
         dict_b = json_str_2_data_dict(f.read())
     return (dict_a, dict_b)
 
-
+"""
+Basic set operations for dictionaries
+"""
 def union(dict_a, dict_b):
     return dict(dict_b, **dict_a)
 
@@ -59,7 +70,9 @@ def difference(dict_a, dict_b):
 def symmetric_difference(dict_a, dict_b):
     return union(difference(dict_a, dict_b), difference(dict_b, dict_a))
 
-
+"""
+Command line commands
+"""
 def union_cmd(args):
     dict_a, dict_b = get_dicts(args.in_file)
     print data_dict_2_json(union(dict_a, dict_b))
@@ -84,26 +97,27 @@ def update_cmd(args):
 def main(arguments=None):
     parser = _argparse.ArgumentParser()
     parser.add_argument('--version', action='version', version="Version " +VERSION+ " - " +URL)
-    subparsers = parser.add_subparsers(help='.')
 
-    parser_union = subparsers.add_parser('union', help='Union: stdin | in_file = stdout.')
-    parser_union.add_argument('in_file', help=".")
+    subparsers = parser.add_subparsers(help='Data dictionary operations tool.')
+
+    parser_union = subparsers.add_parser('union', help='Union: A | B = stdin | in_file = stdout.')
+    parser_union.add_argument('in_file', help="Input file containing the dictionary B.")
     parser_union.set_defaults(func=union_cmd)
 
-    parser_inter = subparsers.add_parser('inter', help='Intersection: stdin & in_file = stdout.')
-    parser_inter.add_argument('in_file', help=".")
+    parser_inter = subparsers.add_parser('inter', help='Intersection: A & B = stdin & in_file = stdout.')
+    parser_inter.add_argument('in_file', help="Input file containing the JSON dictionary B.")
     parser_inter.set_defaults(func=inter_cmd)
 
-    parser_diff = subparsers.add_parser('diff', help='Difference: stdin - in_file = stdout.')
-    parser_diff.add_argument('in_file', help=".")
+    parser_diff = subparsers.add_parser('diff', help='Difference: A - B = stdin - in_file = stdout.')
+    parser_diff.add_argument('in_file', help="Input file containing the JSON dictionary B.")
     parser_diff.set_defaults(func=diff_cmd)
 
-    parser_symdiff = subparsers.add_parser('symdiff', help='Symmetric difference:stdin ^ in_file = stdout.')
-    parser_symdiff.add_argument('in_file', help=".")
+    parser_symdiff = subparsers.add_parser('symdiff', help='Symmetric difference: A ^ B = stdin ^ in_file = stdout.')
+    parser_symdiff.add_argument('in_file', help="Input file containing the JSON dictionary B.")
     parser_symdiff.set_defaults(func=symdiff_cmd)
 
-    parser_update = subparsers.add_parser('update', help='Update: (in_file & stdin) | (stdin) = stdout.')
-    parser_update.add_argument('in_file', help=".")
+    parser_update = subparsers.add_parser('update', help='Update: (B & A) | A = (in_file & stdin) | stdin = stdout.')
+    parser_update.add_argument('in_file', help="Input file containing the JSON dictionary B.")
     parser_update.set_defaults(func=update_cmd)
     
     args = parser.parse_args(arguments)
