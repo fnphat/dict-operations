@@ -46,18 +46,6 @@ def data_dict_2_json(data_dict):
     """
     return _json.dumps( _collections.OrderedDict(sorted(data_dict.items(), key=lambda t: t[0].lower())), indent=4 )
 
-def get_dicts(in_file, reverse_order=False):
-    """
-    Returns a tuple of dictionary A and B, from the standard input for A and the input file for B.
-    """
-    dict_a = json_str_2_data_dict(_sys.stdin.read())
-    with open(in_file) as f:
-        dict_b = json_str_2_data_dict(f.read())
-    if reverse_order:
-        return (dict_b, dict_a)
-    else:
-        return (dict_a, dict_b)
-
 """
 Basic set operations for dictionaries
 """
