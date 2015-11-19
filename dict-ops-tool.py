@@ -46,14 +46,17 @@ def data_dict_2_json(data_dict):
     """
     return _json.dumps( _collections.OrderedDict(sorted(data_dict.items(), key=lambda t: t[0].lower())), indent=4 )
 
-def get_dicts(in_file):
+def get_dicts(in_file, reverse_order=False):
     """
     Returns a tuple of dictionary A and B, from the standard input for A and the input file for B.
     """
     dict_a = json_str_2_data_dict(_sys.stdin.read())
     with open(in_file) as f:
         dict_b = json_str_2_data_dict(f.read())
-    return (dict_a, dict_b)
+    if reverse_order:
+        return (dict_b, dict_a)
+    else:
+        return (dict_a, dict_b)
 
 """
 Basic set operations for dictionaries
@@ -74,55 +77,67 @@ def symmetric_difference(dict_a, dict_b):
 Command line commands
 """
 def union_cmd(args):
-    dict_a, dict_b = get_dicts(args.in_file)
-    print data_dict_2_json(union(dict_a, dict_b))
+    print data_dict_2_json(union(args.dict_a, args.dict_b))
 
 def inter_cmd(args):
-    dict_a, dict_b = get_dicts(args.in_file)
-    print data_dict_2_json(intersection(dict_a, dict_b))
+    print data_dict_2_json(intersection(args.dict_a, args.dict_b))
 
 def diff_cmd(args):
-    dict_a, dict_b = get_dicts(args.in_file)
-    print data_dict_2_json(difference(dict_a, dict_b))
+    print data_dict_2_json(difference(args.dict_a, args.dict_b))
     
 def symdiff_cmd(args):
-    dict_a, dict_b = get_dicts(args.in_file)
-    print data_dict_2_json(symmetric_difference(dict_a, dict_b))
+    print data_dict_2_json(symmetric_difference(args.dict_a, args.dict_b))
  
 def update_cmd(args):
-    dict_a, dict_b = get_dicts(args.in_file)
-    print data_dict_2_json(union(intersection(dict_b, dict_a), dict_a))
+    print data_dict_2_json(union(intersection(args.dict_b, args.dict_a), args.dict_a))
 
    
 def main(arguments=None):
     parser = _argparse.ArgumentParser()
+    
+    # Basic arguments
     parser.add_argument('--version', action='version', version="Version " +VERSION+ " - " +URL)
+    
+    # Common arguments
+    parent_parser = _argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('in_file', help="Input file containing the JSON dictionary B.")
+    parent_parser.add_argument('-r', '--reverse-order', action='store_true', dest='reverse', help="Reverse the order of the operands: dict A is in_file and dict B is stdin.")
 
-    subparsers = parser.add_subparsers(help='Data dictionary operations tool.')
-
-    parser_union = subparsers.add_parser('union', help='Union: A | B = stdin | in_file = stdout.')
-    parser_union.add_argument('in_file', help="Input file containing the dictionary B.")
+    # Commands
+    subparsers = parser.add_subparsers(help='Data dictionary operations tool. Dict A is stdin and dict B is in_file.')
+    
+    parser_union = subparsers.add_parser('union', parents=[parent_parser], help='Union: A | B = stdin | in_file = stdout.')
     parser_union.set_defaults(func=union_cmd)
 
-    parser_inter = subparsers.add_parser('inter', help='Intersection: A & B = stdin & in_file = stdout.')
-    parser_inter.add_argument('in_file', help="Input file containing the JSON dictionary B.")
+    parser_inter = subparsers.add_parser('inter', parents=[parent_parser], help='Intersection: A & B = stdin & in_file = stdout.')
     parser_inter.set_defaults(func=inter_cmd)
 
-    parser_diff = subparsers.add_parser('diff', help='Difference: A - B = stdin - in_file = stdout.')
-    parser_diff.add_argument('in_file', help="Input file containing the JSON dictionary B.")
+    parser_diff = subparsers.add_parser('diff', parents=[parent_parser], help='Difference: A - B = stdin - in_file = stdout.')
     parser_diff.set_defaults(func=diff_cmd)
 
-    parser_symdiff = subparsers.add_parser('symdiff', help='Symmetric difference: A ^ B = stdin ^ in_file = stdout.')
-    parser_symdiff.add_argument('in_file', help="Input file containing the JSON dictionary B.")
+    parser_symdiff = subparsers.add_parser('symdiff', parents=[parent_parser], help='Symmetric difference: A ^ B = stdin ^ in_file = stdout.')
     parser_symdiff.set_defaults(func=symdiff_cmd)
 
-    parser_update = subparsers.add_parser('update', help='Update: (B & A) | A = (in_file & stdin) | stdin = stdout.')
-    parser_update.add_argument('in_file', help="Input file containing the JSON dictionary B.")
+    parser_update = subparsers.add_parser('update', parents=[parent_parser], help='Update: (B & A) | A = (in_file & stdin) | stdin = stdout.')
     parser_update.set_defaults(func=update_cmd)
     
     args = parser.parse_args(arguments)
-    args.func(args)
 
+    # Get dict A and B
+    if not _sys.stdin.isatty():
+        stdin_dict = json_str_2_data_dict(_sys.stdin.read())
+        with open(args.in_file) as f:
+            in_file_dict = json_str_2_data_dict(f.read())
+        if args.reverse:
+            args.dict_a, args.dict_b = (in_file_dict, stdin_dict)
+        else:
+            args.dict_a, args.dict_b = (stdin_dict, in_file_dict)
+        
+        args.func(args)
+    else:
+        print "You need to provide a JSON dictionary on STDIN."
+        exit(1)
+       
         
 if __name__ == "__main__":
     main()
