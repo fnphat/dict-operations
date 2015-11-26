@@ -71,7 +71,7 @@ def equal_cmd(args):
     return args.dict_a == args.dict_b
     
 def kequal_cmd(args):
-    return args.dict_a.keys() == args.dict_b.keys()
+    return set(args.dict_a.keys()) == set(args.dict_b.keys())
 
 def union_cmd(args):
     return data_dict_2_json(union(args.dict_a, args.dict_b))
