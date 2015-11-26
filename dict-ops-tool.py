@@ -64,20 +64,29 @@ def symmetric_difference(dict_a, dict_b):
 """
 Command line commands
 """
+def count_cmd(args):
+    return len(args.dict)
+
+def equal_cmd(args):
+    return args.dict_a == args.dict_b
+    
+def kequal_cmd(args):
+    return args.dict_a.keys() == args.dict_b.keys()
+
 def union_cmd(args):
-    print data_dict_2_json(union(args.dict_a, args.dict_b))
+    return data_dict_2_json(union(args.dict_a, args.dict_b))
 
 def inter_cmd(args):
-    print data_dict_2_json(intersection(args.dict_a, args.dict_b))
+    return data_dict_2_json(intersection(args.dict_a, args.dict_b))
 
 def diff_cmd(args):
-    print data_dict_2_json(difference(args.dict_a, args.dict_b))
+    return data_dict_2_json(difference(args.dict_a, args.dict_b))
     
 def symdiff_cmd(args):
-    print data_dict_2_json(symmetric_difference(args.dict_a, args.dict_b))
+    return data_dict_2_json(symmetric_difference(args.dict_a, args.dict_b))
  
 def update_cmd(args):
-    print data_dict_2_json(union(intersection(args.dict_b, args.dict_a), args.dict_a))
+    return data_dict_2_json(union(intersection(args.dict_b, args.dict_a), args.dict_a))
 
    
 def main(arguments=None):
@@ -92,40 +101,51 @@ def main(arguments=None):
     parent_parser.add_argument('-r', '--reverse-order', action='store_true', dest='reverse', help="Reverse the order of the operands: dict A is in_file and dict B is stdin.")
 
     # Commands
-    subparsers = parser.add_subparsers(help='Data dictionary operations tool. Dict A is stdin and dict B is in_file.')
+    subparsers = parser.add_subparsers(help="Data dictionary operations tool. Dict A is stdin and dict B is in_file. Dict A's values have priority over dict B's values.")
+
+    parser_count = subparsers.add_parser('count', help="Count the number of key-value pairs: len(A) = len(stdin) = <positive integer>.")
+    parser_count.set_defaults(func=count_cmd)
+
+    parser_equal = subparsers.add_parser('==', parents=[parent_parser], help="Equality: [A == B] = [stdin == in_file] = True|False.")
+    parser_equal.set_defaults(func=equal_cmd)
+
+    parser_kequal = subparsers.add_parser('k==', parents=[parent_parser], help="Equality of keys: [keys(A) == keys(B)] = [keys(stdin) == keys(in_file)] = True|False.")
+    parser_kequal.set_defaults(func=kequal_cmd)
     
-    parser_union = subparsers.add_parser('union', parents=[parent_parser], help='Union: A | B = stdin | in_file = stdout.')
+    parser_union = subparsers.add_parser('union', parents=[parent_parser], help="Union: A | B = stdin | in_file = stdout.")
     parser_union.set_defaults(func=union_cmd)
 
-    parser_inter = subparsers.add_parser('inter', parents=[parent_parser], help='Intersection: A & B = stdin & in_file = stdout.')
+    parser_inter = subparsers.add_parser('inter', parents=[parent_parser], help="Intersection: A & B = stdin & in_file = stdout.")
     parser_inter.set_defaults(func=inter_cmd)
 
-    parser_diff = subparsers.add_parser('diff', parents=[parent_parser], help='Difference: A - B = stdin - in_file = stdout.')
+    parser_diff = subparsers.add_parser('diff', parents=[parent_parser], help="Difference: A - B = stdin - in_file = stdout.")
     parser_diff.set_defaults(func=diff_cmd)
 
-    parser_symdiff = subparsers.add_parser('symdiff', parents=[parent_parser], help='Symmetric difference: A ^ B = stdin ^ in_file = stdout.')
+    parser_symdiff = subparsers.add_parser('symdiff', parents=[parent_parser], help="Symmetric difference: A ^ B = stdin ^ in_file = stdout.")
     parser_symdiff.set_defaults(func=symdiff_cmd)
 
-    parser_update = subparsers.add_parser('update', parents=[parent_parser], help='Update: (B & A) | A = (in_file & stdin) | stdin = stdout.')
+    parser_update = subparsers.add_parser('update', parents=[parent_parser], help="Update: (B & A) | A = (in_file & stdin) | stdin = stdout.")
     parser_update.set_defaults(func=update_cmd)
     
     args = parser.parse_args(arguments)
 
     # Get dict A and B
-    if not _sys.stdin.isatty():
-        stdin_dict = json_str_2_data_dict(_sys.stdin.read())
-        with open(args.in_file) as f:
-            in_file_dict = json_str_2_data_dict(f.read())
-        if args.reverse:
-            args.dict_a, args.dict_b = (in_file_dict, stdin_dict)
-        else:
-            args.dict_a, args.dict_b = (stdin_dict, in_file_dict)
-        
-        args.func(args)
-    else:
+    if _sys.stdin.isatty():
         print "You need to provide a JSON dictionary on STDIN."
         exit(1)
+    else:
+        stdin_dict = json_str_2_data_dict(_sys.stdin.read())
+        if 'in_file' in args:
+            with open(args.in_file) as f:
+                in_file_dict = json_str_2_data_dict(f.read())
+            if args.reverse:
+                args.dict_a, args.dict_b = (in_file_dict, stdin_dict)
+            else:
+                args.dict_a, args.dict_b = (stdin_dict, in_file_dict)
+        else:
+            args.dict = stdin_dict
+        return args.func(args)
+
        
-        
 if __name__ == "__main__":
-    main()
+    print main()
