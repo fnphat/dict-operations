@@ -3,7 +3,7 @@ Data Dictionary Operations Tool
 
 Description
 -----------
-This tool can apply set operations to data dictionaries. It can do basic set operations: union, intersection, difference and symmetric difference between two data dictionaries. Since a dictionary contains key-value pairs, only the keys will be used to do the set operations, with one dictionary's values having priority over the values of the other dictionary involved, when using the union and the intersection operations.
+This tool can apply basic operations to data dictionaries: equality of keys, equality, intersection, difference,  merge, extract, and erase operations between two data dictionaries. Also, it can count the number of key-value pairs in a dictionary.
 
 For more information, please have a look at some reference pages: 
 - [Data dictionary](https://en.wikipedia.org/wiki/Associative_array)
@@ -11,30 +11,56 @@ For more information, please have a look at some reference pages:
 
 Usage
 -----
-### Union
-To do a union operation between dictionary A and dictionary B, noted A | B, values of A having priority over B:
+### Count
+Count the number of key-value pairs: the result will be a non-negative integer:
 ```
-#> cat dict_A.json | python dict-ops-tool.py union dict_B.json > dict_C.json
+#> cat dict_A.json | python dict-ops-tool.py count
+53
 ```
-Note: A | B != B | A
 
-### Intersection
-To do an intersection operation between dictionary A and dictionary B, noted A & B, values of A having priority over B:
+### Keys equality
+'True' when all keys from dictionary A are in dictionary B and vice-versa, 'False' otherwise:
+```
+#> cat dict_A.json | python dict-ops-tool.py samekeys dict_B.json
+True
+```
+
+### Dictionary equality
+'True' when all key-value pairs from dictionary A are in dictionary B and vice-versa, 'False' otherwise:
+```
+#> cat dict_A.json | python dict-ops-tool.py same dict_B.json
+False
+```
+
+### Intersection of dictionaries
+Get the key-value pairs that are common to dictionary A and dictionary B:
 ```
 #> cat dict_A.json | python dict-ops-tool.py inter dict_B.json > dict_C.json
 ```
-Note: A & B != B & A
 
-### Difference
-To do a difference operation between dictionary A and dictionary B, noted A - B:
+### Difference of dictionaries
+Remove key-value pairs from dictionary A that are in dictionary B:
 ```
 #> cat dict_A.json | python dict-ops-tool.py diff dict_B.json > dict_C.json
 ```
 
-### Symmetric difference
-To do a symmetric difference operation between dictionary A and dictionary B, noted A ^ B:
+### Merge dictionaries
+Merge dictionaries: value in dictionary A have priority over value in dictionary B with the same key:
 ```
-#> cat dict_A.json | python dict-ops-tool.py symdiff dict_B.json > dict_C.json
+#> cat dict_A.json | python dict-ops-tool.py merge dict_B.json > dict_C.json
+```
+Note: merge(A, B) != merge(B, A)
+
+### Extract key-value pairs
+Extract key-value pairs from dictionary A for all keys that are in dictionary B:
+```
+#> cat dict_A.json | python dict-ops-tool.py extract dict_B.json > dict_C.json
+```
+
+### Erase key-value pairs
+Erase key-value pairs from dictionary A for all keys that are in dictionary B:
+```
+#> cat dict_A.json | python dict-ops-tool.py erase dict_B.json > dict_C.json
 ```
 
 License

@@ -47,48 +47,61 @@ def data_dict_2_json(data_dict):
     return _json.dumps( _collections.OrderedDict(sorted(data_dict.items(), key=lambda t: t[0].lower())), indent=4 )
 
 """
-Basic set operations for dictionaries
+Basic operations for dictionaries
 """
-def union(dict_a, dict_b):
-    return dict(dict_b, **dict_a)
+def count(dict_a):
+    return len(dict_a)
+
+def same_keys(dict_a, dict_b):
+    return set(dict_a.keys()) == set(dict_b.keys())
+
+def same(dict_a, dict_b):
+    return dict_a == dict_b
 
 def intersection(dict_a, dict_b):
-    return {k:v for k,v in dict_a.items() if k in dict_b.keys()}
+    return dict(set(dict_a.items()) & set(dict_b.items()))
 
 def difference(dict_a, dict_b):
-    return {k:v for k,v in dict_a.items() if k not in dict_b.keys()}
+    return dict(set(dict_a.items()) - set(dict_b.items()))
 
-def symmetric_difference(dict_a, dict_b):
-    return union(difference(dict_a, dict_b), difference(dict_b, dict_a))
+def merge(dict_a, dict_b):
+    return dict(dict_b, **dict_a)
+
+def extract(dict_a, dict_b):
+    return {k:v for k,v in dict_a.items() if k in dict_b.keys()}
+
+def erase(dict_a, dict_b):
+    return {k:v for k,v in dict_a.items() if k not in dict_b.keys()}
 
 """
 Command line commands
 """
 def count_cmd(args):
-    return len(args.dict)
+    return count(args.dict)
 
-def equal_cmd(args):
-    return args.dict_a == args.dict_b
-    
-def kequal_cmd(args):
-    return set(args.dict_a.keys()) == set(args.dict_b.keys())
+def samekeys_cmd(args):
+    return same_keys(args.dict_a, args.dict_b)
 
-def union_cmd(args):
-    return data_dict_2_json(union(args.dict_a, args.dict_b))
+def same_cmd(args):
+    return same(args.dict_a, args.dict_b)
 
 def inter_cmd(args):
     return data_dict_2_json(intersection(args.dict_a, args.dict_b))
 
 def diff_cmd(args):
     return data_dict_2_json(difference(args.dict_a, args.dict_b))
-    
-def symdiff_cmd(args):
-    return data_dict_2_json(symmetric_difference(args.dict_a, args.dict_b))
- 
-def update_cmd(args):
-    return data_dict_2_json(union(intersection(args.dict_b, args.dict_a), args.dict_a))
 
-   
+def merge_cmd(args):
+    return data_dict_2_json(merge(args.dict_a, args.dict_b))
+
+def extract_cmd(args):
+    return data_dict_2_json(extract(args.dict_a, args.dict_b))
+
+def erase_cmd(args):
+    return data_dict_2_json(erase(args.dict_a, args.dict_b))
+
+
+
 def main(arguments=None):
     parser = _argparse.ArgumentParser()
     
@@ -99,36 +112,37 @@ def main(arguments=None):
     parent_parser = _argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('in_file', help="Input file containing the JSON dictionary B.")
     parent_parser.add_argument('-r', '--reverse-order', action='store_true', dest='reverse', help="Reverse the order of the operands: dict A is in_file and dict B is stdin.")
-
-    # Commands
-    subparsers = parser.add_subparsers(help="Data dictionary operations tool. Dict A is stdin and dict B is in_file. Dict A's values have priority over dict B's values.")
-
-    parser_count = subparsers.add_parser('count', help="Count the number of key-value pairs: len(A) = len(stdin) = <positive integer>.")
-    parser_count.set_defaults(func=count_cmd)
-
-    parser_equal = subparsers.add_parser('==', parents=[parent_parser], help="Equality: [A == B] = [stdin == in_file] = True|False.")
-    parser_equal.set_defaults(func=equal_cmd)
-
-    parser_kequal = subparsers.add_parser('k==', parents=[parent_parser], help="Equality of keys: [keys(A) == keys(B)] = [keys(stdin) == keys(in_file)] = True|False.")
-    parser_kequal.set_defaults(func=kequal_cmd)
     
-    parser_union = subparsers.add_parser('union', parents=[parent_parser], help="Union: A | B = stdin | in_file = stdout.")
-    parser_union.set_defaults(func=union_cmd)
-
-    parser_inter = subparsers.add_parser('inter', parents=[parent_parser], help="Intersection: A & B = stdin & in_file = stdout.")
+    # Commands
+    subparsers = parser.add_subparsers(help="Data dictionary operations tool. Dict A is stdin and dict B is in_file, result is on stdout.")
+    
+    parser_count = subparsers.add_parser('count', help="Count the number of key-value pairs: the result will be a non-negative integer.")
+    parser_count.set_defaults(func=count_cmd)
+    
+    parser_samekeys = subparsers.add_parser('samekeys', parents=[parent_parser], help="Keys equality: 'True' when all keys from A are in B and vice-versa, 'False' otherwise.")
+    parser_samekeys.set_defaults(func=samekeys_cmd)
+    
+    parser_same = subparsers.add_parser('same', parents=[parent_parser], help="key-value pairs equality: 'True' when all key-value pairs from A are in B and vice-versa, 'False' otherwise.")
+    parser_same.set_defaults(func=same_cmd)
+    
+    parser_inter = subparsers.add_parser('inter', parents=[parent_parser], help="Intersection of dictionaries: get the key-value pairs that are common to A and B.")
     parser_inter.set_defaults(func=inter_cmd)
-
-    parser_diff = subparsers.add_parser('diff', parents=[parent_parser], help="Difference: A - B = stdin - in_file = stdout.")
+    
+    parser_diff = subparsers.add_parser('diff', parents=[parent_parser], help="Difference of dictionaries: remove key-value pairs from A that are in B.")
     parser_diff.set_defaults(func=diff_cmd)
-
-    parser_symdiff = subparsers.add_parser('symdiff', parents=[parent_parser], help="Symmetric difference: A ^ B = stdin ^ in_file = stdout.")
-    parser_symdiff.set_defaults(func=symdiff_cmd)
-
-    parser_update = subparsers.add_parser('update', parents=[parent_parser], help="Update: (B & A) | A = (in_file & stdin) | stdin = stdout.")
-    parser_update.set_defaults(func=update_cmd)
+    
+    parser_merge = subparsers.add_parser('merge', parents=[parent_parser], help="Merge dictionaries: value in A have priority over value in B with the same key.")
+    parser_merge.set_defaults(func=merge_cmd)
+    
+    parser_extract = subparsers.add_parser('extract', parents=[parent_parser], help="Extract key-value pairs from A for all keys that are in B.")
+    parser_extract.set_defaults(func=extract_cmd)
+    
+    parser_erase = subparsers.add_parser('erase', parents=[parent_parser], help="Erase key-value pairs from A for all keys that are in B.")
+    parser_erase.set_defaults(func=erase_cmd)
+    
     
     args = parser.parse_args(arguments)
-
+    
     # Get dict A and B
     if _sys.stdin.isatty():
         print "You need to provide a JSON dictionary on STDIN."
@@ -145,7 +159,7 @@ def main(arguments=None):
         else:
             args.dict = stdin_dict
         return args.func(args)
-
-       
+    
+    
 if __name__ == "__main__":
     print main()
